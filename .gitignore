@@ -1,0 +1,36 @@
+# 后端文件
+backend/back/target/
+backend/back/book_db.db
+backend/back/upload/
+
+# 前端文件
+frontend/node_modules/
+frontend/dist/
+frontend/.vscode/
+frontend/remote_book_db.db
+
+# IDE文件
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS文件
+.DS_Store
+Thumbs.db
+
+# 日志文件
+*.log
+logs/
+
+# 编译文件
+*.class
+*.jar
+*.war
+*.ear
+
+# 临时文件
+*.tmp
+*.temp
+.cache/

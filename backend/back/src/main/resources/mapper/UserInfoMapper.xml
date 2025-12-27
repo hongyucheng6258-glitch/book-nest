@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.book.mapper.UserInfoMapper">
+
+    <!-- 结果集映射：数据库列→实体类字段 -->
+    <resultMap id="UserInfoResultMap" type="com.example.book.entity.UserInfo">
+        <id column="id" property="id"/>
+        <result column="user_id" property="userId"/>
+        <result column="nickname" property="nickname"/>
+        <result column="avatar" property="avatar"/>
+        <result column="gender" property="gender"/>
+        <result column="birthday" property="birthday"/>
+        <result column="phone" property="phone"/>
+        <result column="email" property="email"/>
+        <result column="created_at" property="createdAt"/>
+        <result column="updated_at" property="updatedAt"/>
+    </resultMap>
+
+    <!-- 根据用户ID查询用户详情 -->
+    <select id="selectByUserId" resultMap="UserInfoResultMap">
+        SELECT id, user_id, nickname, avatar, gender, birthday, phone, email, created_at, updated_at
+        FROM user_info
+        WHERE user_id = #{userId}
+    </select>
+
+    <!-- 插入用户详情 -->
+    <insert id="insert">
+        <selectKey keyProperty="id" order="AFTER" resultType="java.lang.Integer">
+            SELECT last_insert_rowid()
+        </selectKey>
+        INSERT INTO user_info (user_id, nickname, avatar, gender, birthday, phone, email, created_at, updated_at)
+        VALUES (#{userId}, #{nickname}, #{avatar}, #{gender}, #{birthday}, #{phone}, #{email}, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+    </insert>
+
+    <!-- 更新用户详情 -->
+    <update id="update">
+        UPDATE user_info
+        SET nickname = #{nickname},
+            avatar = #{avatar},
+            gender = #{gender},
+            birthday = #{birthday},
+            phone = #{phone},
+            email = #{email},
+            updated_at = CURRENT_TIMESTAMP
+        WHERE user_id = #{userId}
+    </update>
+
+    <!-- 根据用户ID删除用户详情 -->
+    <delete id="deleteByUserId">
+        DELETE FROM user_info
+        WHERE user_id = #{userId}
+    </delete>
+
+</mapper>

@@ -1,0 +1,34 @@
+spring:
+  # 数据库配置（SQLite，当前目录）
+  datasource:
+    url: jdbc:sqlite:book_db.db  # 当前目录下的数据库文件
+    driver-class-name: org.sqlite.JDBC  # SQLite固定驱动类，无需修改
+  
+  # 字符编码配置，确保UTF-8编码
+  servlet:
+    encoding:
+      charset: UTF-8
+      enabled: true
+      force: true
+  
+  http:
+    encoding:
+      charset: UTF-8  # 已弃用，建议使用 server.servlet.encoding.charset
+
+      enabled: true
+      force: true
+
+
+# MyBatis-Flex配置
+mybatis-flex:
+  type-aliases-package: com.example.book.entity
+  configuration:
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+
+# 服务器配置（完全不变，与前端端口保持一致）
+server:
+  port: 8088
+  servlet:
+    context-path: /
+  tomcat:
+    uri-encoding: UTF-8

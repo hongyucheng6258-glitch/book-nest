@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.book.mapper.FriendRequestMapper">
+
+    <!-- 结果集映射：数据库列→实体类字段 -->
+    <resultMap id="FriendRequestResultMap" type="com.example.book.entity.FriendRequest">
+        <id column="id" property="id"/>
+        <result column="from_user_id" property="fromUserId"/>
+        <result column="to_user_id" property="toUserId"/>
+        <result column="status" property="status"/>
+        <result column="created_at" property="createdAt"/>
+        <result column="updated_at" property="updatedAt"/>
+        <!-- 关联发送者信息 -->
+        <association property="fromUser" javaType="com.example.book.entity.User">
+            <id column="from_user_id" property="id"/>
+            <result column="from_username" property="username"/>
+        </association>
+        <!-- 关联接收者信息 -->
+        <association property="toUser" javaType="com.example.book.entity.User">
+            <id column="to_user_id" property="id"/>
+            <result column="to_username" property="username"/>
+        </association>
+    </resultMap>
+
+    <!-- 1. 添加好友请求 -->
+    <insert id="insert">
+        INSERT INTO friend_request (from_user_id, to_user_id, status, created_at, updated_at)
+        VALUES (#{fromUserId}, #{toUserId}, #{status}, #{createdAt}, #{updatedAt})
+    </insert>
+
+    <!-- 2. 根据ID删除好友请求 -->
+    <delete id="deleteById">
+        DELETE FROM friend_request WHERE id = #{id}
+    </delete>
+
+    <!-- 3. 根据发送者和接收者ID删除好友请求 -->
+    <delete id="deleteByUserIds">
+        DELETE FROM friend_request WHERE from_user_id = #{fromUserId} AND to_user_id = #{toUserId}
+    </delete>
+
+    <!-- 4. 根据ID查询好友请求 -->
+    <select id="selectById" resultMap="FriendRequestResultMap">
+        SELECT fr.id, fr.from_user_id, fr.to_user_id, fr.status, fr.created_at, fr.updated_at,
+               u1.username as from_username, u2.username as to_username
+        FROM friend_request fr
+        LEFT JOIN user u1 ON fr.from_user_id = u1.id
+        LEFT JOIN user u2 ON fr.to_user_id = u2.id
+        WHERE fr.id = #{id}
+    </select>
+
+    <!-- 5. 查询发送者和接收者之间的好友请求 -->
+    <select id="selectByUserIds" resultMap="FriendRequestResultMap">
+        SELECT fr.id, fr.from_user_id, fr.to_user_id, fr.status, fr.created_at, fr.updated_at,
+               u1.username as from_username, u2.username as to_username
+        FROM friend_request fr
+        LEFT JOIN user u1 ON fr.from_user_id = u1.id
+        LEFT JOIN user u2 ON fr.to_user_id = u2.id
+        WHERE fr.from_user_id = #{fromUserId} AND fr.to_user_id = #{toUserId}
+    </select>
+
+    <!-- 6. 查询用户收到的好友请求列表 -->
+    <select id="selectByToUserId" resultMap="FriendRequestResultMap">
+        SELECT fr.id, fr.from_user_id, fr.to_user_id, fr.status, fr.created_at, fr.updated_at,
+               u1.username as from_username, u2.username as to_username
+        FROM friend_request fr
+        LEFT JOIN user u1 ON fr.from_user_id = u1.id
+        LEFT JOIN user u2 ON fr.to_user_id = u2.id
+        WHERE fr.to_user_id = #{toUserId} AND fr.status = 1
+        ORDER BY fr.created_at DESC
+    </select>
+
+    <!-- 7. 查询用户发送的好友请求列表 -->
+    <select id="selectByFromUserId" resultMap="FriendRequestResultMap">
+        SELECT fr.id, fr.from_user_id, fr.to_user_id, fr.status, fr.created_at, fr.updated_at,
+               u1.username as from_username, u2.username as to_username
+        FROM friend_request fr
+        LEFT JOIN user u1 ON fr.from_user_id = u1.id
+        LEFT JOIN user u2 ON fr.to_user_id = u2.id
+        WHERE fr.from_user_id = #{fromUserId}
+        ORDER BY fr.created_at DESC
+    </select>
+
+    <!-- 8. 更新好友请求状态 -->
+    <update id="updateStatus">
+        UPDATE friend_request SET status = #{status}, updated_at = CURRENT_TIMESTAMP WHERE id = #{id}
+    </update>
+
+    <!-- 9. 获取所有好友请求 -->
+    <select id="selectAll" resultMap="FriendRequestResultMap">
+        SELECT fr.id, fr.from_user_id, fr.to_user_id, fr.status, fr.created_at, fr.updated_at,
+               u1.username as from_username, u2.username as to_username
+        FROM friend_request fr
+        LEFT JOIN user u1 ON fr.from_user_id = u1.id
+        LEFT JOIN user u2 ON fr.to_user_id = u2.id
+        ORDER BY fr.created_at DESC
+    </select>
+
+</mapper>

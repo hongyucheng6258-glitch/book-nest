@@ -1,0 +1,176 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.book.mapper.OrderMapper">
+
+    <!-- 结果集映射：数据库列→实体类字段 -->
+    <resultMap id="OrderResultMap" type="com.example.book.entity.Order">
+        <id column="id" property="id"/>
+        <result column="user_id" property="userId"/>
+        <result column="total_price" property="totalPrice"/>
+        <result column="status" property="status"/>
+        <result column="user_order_num" property="userOrderNum"/>
+        <result column="created_at" property="createdAt"/>
+        <result column="updated_at" property="updatedAt"/>
+        <!-- 映射用户名（从关联查询中获取） -->
+        <result column="username" property="username"/>
+        <!-- 关联订单详情列表 -->
+        <collection property="orderItems" column="id" select="com.example.book.mapper.OrderItemMapper.selectByOrderId"/>
+    </resultMap>
+
+    <!-- 根据用户ID、订单ID、用户名和状态查询订单列表 -->
+    <select id="selectByUserId" resultMap="OrderResultMap">
+        SELECT o.id, o.user_id, o.total_price, o.`status`, o.user_order_num, o.created_at, o.updated_at, u.username
+        FROM `order` o
+        LEFT JOIN user u ON o.user_id = u.id
+        <where>
+            <if test="userId != null">
+                o.user_id = #{userId}
+            </if>
+            <if test="id != null">
+                <if test="userId != null or username != null">
+                    AND o.id = #{id}
+                </if>
+                <if test="userId == null and username == null">
+                    o.id = #{id}
+                </if>
+            </if>
+            <if test="username != null">
+                <if test="userId != null or id != null">
+                    AND u.username LIKE '%' || #{username} || '%'
+                </if>
+                <if test="userId == null and id == null">
+                    u.username LIKE '%' || #{username} || '%'
+                </if>
+            </if>
+            <if test="status != null">
+                <if test="userId != null or id != null or username != null">
+                    AND o.`status` = #{status}
+                </if>
+                <if test="userId == null and id == null and username == null">
+                    o.`status` = #{status}
+                </if>
+            </if>
+        </where>
+        ORDER BY o.created_at DESC
+        <if test="currentPage != null and pageSize != null">
+            <!-- 计算偏移量 -->
+            <bind name="offset" value="(currentPage - 1) * pageSize" />
+            LIMIT #{pageSize} OFFSET #{offset}
+        </if>
+    </select>
+
+    <!-- 根据订单ID查询订单详情 -->
+    <select id="selectById" resultMap="OrderResultMap">
+        SELECT o.id, o.user_id, o.total_price, o.`status`, o.user_order_num, o.created_at, o.updated_at, u.username
+        FROM `order` o
+        LEFT JOIN user u ON o.user_id = u.id
+        WHERE o.id = #{id}
+    </select>
+
+    <!-- 插入订单 -->
+    <insert id="insert">
+        <selectKey keyProperty="id" order="AFTER" resultType="java.lang.Integer">
+            SELECT last_insert_rowid()
+        </selectKey>
+        INSERT INTO `order` (user_id, total_price, `status`, user_order_num, created_at, updated_at)
+        VALUES (#{userId}, #{totalPrice}, #{status}, #{userOrderNum}, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+    </insert>
+
+    <!-- 更新订单状态 -->
+    <update id="updateStatus">
+        UPDATE `order`
+        SET `status` = #{status}, updated_at = CURRENT_TIMESTAMP
+        WHERE id = #{id}
+    </update>
+
+    <!-- 删除订单 -->
+    <delete id="deleteById">
+        DELETE FROM `order`
+        WHERE id = #{id}
+    </delete>
+    
+    <!-- 获取今日订单数 -->
+    <select id="getTodayOrderCount" resultType="long">
+        SELECT COUNT(*) 
+        FROM `order` 
+        WHERE DATE(created_at) = DATE('now')
+    </select>
+    
+    <!-- 获取本月销售额 -->
+    <select id="getMonthSales" resultType="java.lang.Double">
+        SELECT SUM(total_price) 
+        FROM `order` 
+        WHERE STRFTIME('%Y-%m', created_at) = STRFTIME('%Y-%m', 'now')
+        AND `status` IN (1, 2, 3) <!-- 待发货、已发货、已完成订单 -->
+    </select>
+    
+    <!-- 获取用户当前最大订单序号 -->
+    <select id="getMaxUserOrderNum" resultType="java.lang.Integer">
+        SELECT MAX(user_order_num)
+        FROM `order`
+        WHERE user_id = #{userId}
+    </select>
+    
+    <!-- 获取最近7天销售额 -->
+    <select id="getLast7DaysSales" resultType="map">
+        SELECT 
+            DATE(created_at) as date,
+            SUM(total_price) as sales
+        FROM `order`
+        WHERE 
+            DATE(created_at) >= DATE('now', '-6 days')
+            AND `status` IN (1, 2, 3) <!-- 待发货、已发货、已完成订单 -->
+        GROUP BY DATE(created_at)
+        ORDER BY date ASC
+    </select>
+    
+    <!-- 获取书籍分类占比 -->
+    <select id="getCategorySales" resultType="map">
+        SELECT 
+            c.name as categoryName,
+            SUM(oi.quantity * b.price) as sales
+        FROM order_item oi
+        LEFT JOIN book b ON oi.book_id = b.id
+        LEFT JOIN category c ON b.category_id = c.id
+        LEFT JOIN `order` o ON oi.order_id = o.id
+        WHERE o.`status` IN (1, 2, 3) <!-- 待发货、已发货、已完成订单 -->
+        GROUP BY c.id, c.name
+        ORDER BY sales DESC
+    </select>
+    
+    <!-- 查询订单总数，支持用户ID、订单ID、用户名和状态筛选 -->
+    <select id="selectOrderCount" resultType="java.lang.Integer">
+        SELECT COUNT(*)
+        FROM `order` o
+        LEFT JOIN user u ON o.user_id = u.id
+        <where>
+            <if test="userId != null">
+                o.user_id = #{userId}
+            </if>
+            <if test="id != null">
+                <if test="userId != null or username != null">
+                    AND o.id = #{id}
+                </if>
+                <if test="userId == null and username == null">
+                    o.id = #{id}
+                </if>
+            </if>
+            <if test="username != null">
+                <if test="userId != null or id != null">
+                    AND u.username LIKE '%' || #{username} || '%'
+                </if>
+                <if test="userId == null and id == null">
+                    u.username LIKE '%' || #{username} || '%'
+                </if>
+            </if>
+            <if test="status != null">
+                <if test="userId != null or id != null or username != null">
+                    AND o.`status` = #{status}
+                </if>
+                <if test="userId == null and id == null and username == null">
+                    o.`status` = #{status}
+                </if>
+            </if>
+        </where>
+    </select>
+</mapper>

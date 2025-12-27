@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.book.mapper.FriendMapper">
+
+    <!-- 结果集映射：数据库列→实体类字段 -->
+    <resultMap id="FriendResultMap" type="com.example.book.entity.Friend">
+        <id column="id" property="id"/>
+        <result column="user1_id" property="user1Id"/>
+        <result column="user2_id" property="user2Id"/>
+        <result column="status" property="status"/>
+        <result column="created_at" property="createdAt"/>
+        <result column="updated_at" property="updatedAt"/>
+        <!-- 用户1和用户2的用户名和头像 -->
+        <result column="username1" property="username1"/>
+        <result column="username2" property="username2"/>
+        <result column="avatar1" property="avatar1"/>
+        <result column="avatar2" property="avatar2"/>
+        <!-- 关联用户1信息 -->
+        <association property="user1" javaType="com.example.book.entity.User">
+            <id column="user1_id" property="id"/>
+            <result column="username1" property="username"/>
+            <!-- 关联用户1的详情信息（包括头像和昵称） -->
+            <association property="userInfo" javaType="com.example.book.entity.UserInfo">
+                <id column="user1_id" property="userId"/>
+                <result column="avatar1" property="avatar"/>
+                <result column="nickname1" property="nickname"/>
+            </association>
+        </association>
+        <!-- 关联用户2信息 -->
+        <association property="user2" javaType="com.example.book.entity.User">
+            <id column="user2_id" property="id"/>
+            <result column="username2" property="username"/>
+            <!-- 关联用户2的详情信息（包括头像和昵称） -->
+            <association property="userInfo" javaType="com.example.book.entity.UserInfo">
+                <id column="user2_id" property="userId"/>
+                <result column="avatar2" property="avatar"/>
+                <result column="nickname2" property="nickname"/>
+            </association>
+        </association>
+    </resultMap>
+
+    <!-- 1. 添加好友关系 -->
+    <insert id="insert">
+        INSERT INTO friend (user1_id, user2_id, status, created_at, updated_at)
+        VALUES (#{user1Id}, #{user2Id}, #{status}, #{createdAt}, #{updatedAt})
+    </insert>
+
+    <!-- 2. 根据ID删除好友关系 -->
+    <delete id="deleteById">
+        DELETE FROM friend WHERE id = #{id}
+    </delete>
+
+    <!-- 3. 根据用户ID和好友ID删除好友关系 -->
+    <delete id="deleteByUserIdAndFriendId">
+        DELETE FROM friend 
+        WHERE (user1_id = #{userId} AND user2_id = #{friendId}) 
+        OR (user1_id = #{friendId} AND user2_id = #{userId})
+    </delete>
+
+    <!-- 3. 根据ID查询好友关系 -->
+    <select id="selectById" resultMap="FriendResultMap">
+        SELECT f.id, f.user1_id, f.user2_id, f.status, f.created_at, f.updated_at,
+               u1.username as username1, u2.username as username2,
+               ui1.avatar as avatar1, ui2.avatar as avatar2,
+               ui1.nickname as nickname1, ui2.nickname as nickname2
+        FROM friend f
+        LEFT JOIN user u1 ON f.user1_id = u1.id
+        LEFT JOIN user u2 ON f.user2_id = u2.id
+        LEFT JOIN user_info ui1 ON f.user1_id = ui1.user_id
+        LEFT JOIN user_info ui2 ON f.user2_id = ui2.user_id
+        WHERE f.id = #{id}
+    </select>
+
+    <!-- 5. 查询两个用户之间是否存在好友关系 -->
+    <select id="selectByUserIds" resultMap="FriendResultMap">
+        SELECT f.id, f.user1_id, f.user2_id, f.status, f.created_at, f.updated_at,
+               u1.username as username1, u2.username as username2,
+               ui1.avatar as avatar1, ui2.avatar as avatar2,
+               ui1.nickname as nickname1, ui2.nickname as nickname2
+        FROM friend f
+        LEFT JOIN user u1 ON f.user1_id = u1.id
+        LEFT JOIN user u2 ON f.user2_id = u2.id
+        LEFT JOIN user_info ui1 ON f.user1_id = ui1.user_id
+        LEFT JOIN user_info ui2 ON f.user2_id = ui2.user_id
+        WHERE (f.user1_id = #{user1Id} AND f.user2_id = #{user2Id})
+        OR (f.user1_id = #{user2Id} AND f.user2_id = #{user1Id})
+    </select>
+
+    <!-- 6. 查询用户的好友列表 -->
+    <select id="selectByUserId" resultMap="FriendResultMap">
+        SELECT f.id, f.user1_id, f.user2_id, f.status, f.created_at, f.updated_at,
+               u1.username as username1, u2.username as username2,
+               ui1.avatar as avatar1, ui2.avatar as avatar2,
+               ui1.nickname as nickname1, ui2.nickname as nickname2
+        FROM friend f
+        LEFT JOIN user u1 ON f.user1_id = u1.id
+        LEFT JOIN user u2 ON f.user2_id = u2.id
+        LEFT JOIN user_info ui1 ON f.user1_id = ui1.user_id
+        LEFT JOIN user_info ui2 ON f.user2_id = ui2.user_id
+        WHERE (f.user1_id = #{userId} OR f.user2_id = #{userId})
+        AND f.status = 1
+    </select>
+
+    <!-- 7. 更新好友关系状态 -->
+    <update id="updateStatus">
+        UPDATE friend SET status = #{status} WHERE id = #{id}
+    </update>
+
+    <!-- 8. 获取所有好友关系 -->
+    <select id="selectAll" resultMap="FriendResultMap">
+        SELECT f.id, f.user1_id, f.user2_id, f.status, f.created_at, f.updated_at,
+               u1.username as username1, u2.username as username2,
+               ui1.avatar as avatar1, ui2.avatar as avatar2,
+               ui1.nickname as nickname1, ui2.nickname as nickname2
+        FROM friend f
+        LEFT JOIN user u1 ON f.user1_id = u1.id
+        LEFT JOIN user u2 ON f.user2_id = u2.id
+        LEFT JOIN user_info ui1 ON f.user1_id = ui1.user_id
+        LEFT JOIN user_info ui2 ON f.user2_id = ui2.user_id
+    </select>
+
+</mapper>

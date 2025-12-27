@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.book.mapper.CategoryMapper">
+
+    <!-- 结果集映射：数据库列名→实体类字段（若一致可省略，此处为规范） -->
+    <resultMap id="CategoryResultMap" type="com.example.book.entity.Category">
+        <id column="id" property="id"/>
+        <result column="name" property="name"/>
+    </resultMap>
+
+    <!-- 查询所有分类 -->
+    <select id="selectAll" resultMap="CategoryResultMap">
+        SELECT id, name
+        FROM category
+        ORDER BY id ASC; <!-- 按ID排序，保证前端显示顺序稳定 -->
+    </select>
+
+    <!-- 根据ID查询分类 -->
+    <select id="selectById" resultMap="CategoryResultMap">
+        SELECT id, name
+        FROM category
+        WHERE id = #{id}
+    </select>
+
+    <!-- 添加分类 -->
+    <insert id="insert">
+        INSERT INTO category (id, name)
+        VALUES (#{id}, #{name})
+    </insert>
+
+    <!-- 修改分类 -->
+    <update id="update">
+        UPDATE category
+        SET name = #{name}
+        WHERE id = #{id}
+    </update>
+
+    <!-- 删除分类 -->
+    <delete id="deleteById">
+        DELETE FROM category
+        WHERE id = #{id}
+    </delete>
+
+</mapper>

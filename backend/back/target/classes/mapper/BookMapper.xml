@@ -1,0 +1,167 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.book.mapper.BookMapper">
+
+    <!-- 结果集映射：数据库列→实体类字段（解决驼峰命名问题，如category_id→categoryId） -->
+    <resultMap id="BookResultMap" type="com.example.book.entity.Book">
+        <id column="id" property="id"/>
+        <result column="name" property="name"/>
+        <result column="publisher" property="publisher"/>
+        <result column="author" property="author"/>
+        <result column="price" property="price"/>
+        <result column="category_id" property="categoryId"/>
+        <result column="image_url" property="imageUrl"/>
+        <result column="description" property="description"/>
+        <result column="stock" property="stock"/>
+        <result column="sold_count" property="soldCount"/>
+    </resultMap>
+
+    <!-- 1. 整合查询：查当前页数据 -->
+    <select id="selectByQuery" resultMap="BookResultMap">
+        SELECT id, name, publisher, author, price, category_id, image_url, description, stock, sold_count
+        FROM book
+        <where>
+            <!-- 分类筛选：categoryId=0或1时不筛选（0为默认值，1为数据库"全部"分类ID） -->
+            <if test="categoryId != null and categoryId != 0 and categoryId != 1">
+                AND category_id = #{categoryId}
+            </if>
+            <!-- 关键字筛选：匹配书名、出版社、作者 -->
+            <if test="keyword != null and keyword != ''">
+                AND (
+                name LIKE '%' || #{keyword} || '%'
+                OR publisher LIKE '%' || #{keyword} || '%'
+                OR author LIKE '%' || #{keyword} || '%'
+                )
+            </if>
+        </where>
+        <!-- 动态排序 -->
+        <choose>
+            <when test="sortBy == 'price_asc'">
+                ORDER BY price ASC
+            </when>
+            <when test="sortBy == 'price_desc'">
+                ORDER BY price DESC
+            </when>
+            <otherwise>
+                ORDER BY id ASC
+            </otherwise>
+        </choose>
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <!-- 1. 整合查询：查总记录数 -->
+    <select id="selectCountByQuery" resultType="java.lang.Long">
+        SELECT COUNT(*)
+        FROM book
+        <where>
+            <!-- 分类筛选：categoryId=0或1时不筛选（0为默认值，1为数据库"全部"分类ID） -->
+            <if test="categoryId != null and categoryId != 0 and categoryId != 1">
+                AND category_id = #{categoryId}
+            </if>
+            <if test="keyword != null and keyword != ''">
+                AND (
+                name LIKE '%' || #{keyword} || '%'
+                OR publisher LIKE '%' || #{keyword} || '%'
+                OR author LIKE '%' || #{keyword} || '%'
+                )
+            </if>
+        </where>
+    </select>
+
+    <!-- 2. 关键字搜索：查所有匹配数据 -->
+    <select id="selectByKeyword" resultMap="BookResultMap">
+        SELECT id, name, publisher, author, price, category_id, image_url, description, stock, sold_count
+        FROM book
+        <where>
+            <if test="keyword != null and keyword != ''">
+                AND (
+                name LIKE '%' || #{keyword} || '%'
+                OR publisher LIKE '%' || #{keyword} || '%'
+                OR author LIKE '%' || #{keyword} || '%'
+                )
+            </if>
+        </where>
+        ORDER BY id ASC
+    </select>
+
+    <!-- 3. 单纯分页：查当前页数据 -->
+    <select id="selectByPaginate" resultMap="BookResultMap">
+        SELECT id, name, publisher, author, price, category_id, image_url, description, stock, sold_count
+        FROM book
+        ORDER BY id ASC
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <!-- 3. 单纯分页：查总记录数 -->
+    <select id="selectTotalCount" resultType="java.lang.Long">
+        SELECT COUNT(*)
+        FROM book
+    </select>
+    
+    <!-- 4. 根据ID查询书籍详情 -->
+    <select id="selectById" resultMap="BookResultMap">
+        SELECT id, name, publisher, author, price, category_id, image_url, description, stock, sold_count
+        FROM book
+        WHERE id = #{id}
+    </select>
+    
+    <!-- 5. 添加书籍 -->
+    <insert id="insert">
+        INSERT INTO book (name, publisher, author, price, category_id, image_url, description, stock, sold_count)
+        VALUES (#{name}, #{publisher}, #{author}, #{price}, #{categoryId}, #{imageUrl}, #{description}, #{stock, jdbcType=INTEGER}, 0)
+    </insert>
+    
+    <!-- 6. 修改书籍 -->
+    <update id="update">
+        UPDATE book
+        SET name = #{name}, 
+            publisher = #{publisher}, 
+            author = #{author}, 
+            price = #{price}, 
+            category_id = #{categoryId}, 
+            image_url = #{imageUrl}, 
+            description = #{description}, 
+            stock = #{stock}, 
+            sold_count = #{soldCount}
+        WHERE id = #{id}
+    </update>
+    
+    <!-- 7. 查询库存 -->
+    <select id="selectStockById" resultType="java.lang.Integer">
+        SELECT stock
+        FROM book
+        WHERE id = #{id}
+    </select>
+    
+    <!-- 8. 扣减库存并增加已卖数量 -->
+    <update id="decreaseStock">
+        UPDATE book
+        SET stock = stock - #{quantity}, 
+            sold_count = sold_count + #{quantity}
+        WHERE id = #{id} AND stock >= #{quantity}
+    </update>
+    
+    <!-- 9. 更新库存 -->
+    <update id="updateStock">
+        UPDATE book
+        SET stock = #{stock}
+        WHERE id = #{id}
+    </update>
+    
+    <!-- 7. 删除书籍 -->
+    <delete id="deleteById">
+        DELETE FROM book
+        WHERE id = #{id}
+    </delete>
+    
+    <!-- 8. 获取可用的最小书籍ID -->
+    <select id="getAvailableBookId" resultType="java.lang.Integer">
+        SELECT COALESCE(MIN(t1.id + 1), 1) AS available_id
+        FROM (
+            SELECT 0 AS id UNION ALL SELECT id FROM book
+        ) t1
+        WHERE NOT EXISTS (SELECT 1 FROM book t2 WHERE t2.id = t1.id + 1)
+        LIMIT 1
+    </select>
+
+</mapper>

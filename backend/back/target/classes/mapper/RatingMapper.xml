@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.book.mapper.RatingMapper">
+
+    <!-- 结果集映射：数据库列→实体类字段 -->
+    <resultMap id="RatingResultMap" type="com.example.book.entity.Rating">
+        <id column="id" property="id"/>
+        <result column="user_id" property="userId"/>
+        <result column="book_id" property="bookId"/>
+        <result column="rating" property="rating"/>
+        <result column="created_at" property="createdAt"/>
+        <result column="updated_at" property="updatedAt"/>
+        <result column="username" property="userName"/>
+        <result column="book_name" property="bookName"/>
+    </resultMap>
+
+    <!-- 1. 添加评分 -->
+    <insert id="insert">
+        INSERT INTO rating (user_id, book_id, rating, created_at, updated_at)
+        VALUES (#{userId}, #{bookId}, #{rating}, #{createdAt}, #{updatedAt})
+    </insert>
+
+    <!-- 2. 更新评分 -->
+    <update id="update">
+        UPDATE rating
+        SET rating = #{rating}, 
+            updated_at = #{updatedAt}
+        WHERE id = #{id}
+    </update>
+
+    <!-- 3. 根据书籍ID获取平均评分 -->
+    <select id="selectAverageByBookId" resultType="java.lang.Double">
+        SELECT AVG(rating) as average_rating
+        FROM rating
+        WHERE book_id = #{bookId}
+    </select>
+
+    <!-- 4. 根据用户ID和书籍ID获取评分 -->
+    <select id="selectByUserIdAndBookId" resultMap="RatingResultMap">
+        SELECT id, user_id, book_id, rating, created_at, updated_at
+        FROM rating
+        WHERE user_id = #{userId} AND book_id = #{bookId}
+    </select>
+
+    <!-- 5. 根据书籍ID获取评分数量 -->
+    <select id="selectCountByBookId" resultType="java.lang.Integer">
+        SELECT COUNT(*) as rating_count
+        FROM rating
+        WHERE book_id = #{bookId}
+    </select>
+
+    <!-- 6. 根据评分ID获取评分 -->
+    <select id="selectById" resultMap="RatingResultMap">
+        SELECT id, user_id, book_id, rating, created_at, updated_at
+        FROM rating
+        WHERE id = #{id}
+    </select>
+    
+    <!-- 7. 获取所有评分 -->
+    <select id="selectAll" resultMap="RatingResultMap">
+        SELECT r.id, r.user_id, r.book_id, r.rating, r.created_at, r.updated_at, u.username, b.name AS book_name
+        FROM rating r
+        LEFT JOIN user u ON r.user_id = u.id
+        LEFT JOIN book b ON r.book_id = b.id
+        ORDER BY r.created_at ASC
+    </select>
+    
+    <!-- 8. 根据评分ID删除评分 -->
+    <delete id="deleteById">
+        DELETE FROM rating
+        WHERE id = #{id}
+    </delete>
+
+</mapper>

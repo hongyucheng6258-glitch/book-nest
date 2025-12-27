@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.book.mapper.AddressMapper">
+
+    <!-- 结果集映射：数据库列→实体类字段 -->
+    <resultMap id="AddressResultMap" type="com.example.book.entity.Address">
+        <id column="id" property="id"/>
+        <result column="user_id" property="userId"/>
+        <result column="name" property="name"/>
+        <result column="phone" property="phone"/>
+        <result column="province" property="province"/>
+        <result column="city" property="city"/>
+        <result column="district" property="district"/>
+        <result column="detail" property="detail"/>
+        <result column="is_default" property="isDefault"/>
+        <result column="created_at" property="createdAt"/>
+        <result column="updated_at" property="updatedAt"/>
+    </resultMap>
+
+    <!-- 根据用户ID查询地址列表 -->
+    <select id="selectByUserId" resultMap="AddressResultMap">
+        SELECT id, user_id, name, phone, province, city, district, detail, is_default, created_at, updated_at
+        FROM address
+        WHERE user_id = #{userId}
+        ORDER BY is_default DESC, updated_at DESC
+    </select>
+
+    <!-- 根据ID查询地址 -->
+    <select id="selectById" resultMap="AddressResultMap">
+        SELECT id, user_id, name, phone, province, city, district, detail, is_default, created_at, updated_at
+        FROM address
+        WHERE id = #{id}
+    </select>
+
+    <!-- 插入地址 -->
+    <insert id="insert">
+        <selectKey keyProperty="id" order="AFTER" resultType="java.lang.Integer">
+            SELECT last_insert_rowid()
+        </selectKey>
+        INSERT INTO address (user_id, name, phone, province, city, district, detail, is_default, created_at, updated_at)
+        VALUES (#{userId}, #{name}, #{phone}, #{province}, #{city}, #{district}, #{detail}, #{isDefault}, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+    </insert>
+
+    <!-- 更新地址 -->
+    <update id="update">
+        UPDATE address
+        SET name = #{name},
+            phone = #{phone},
+            province = #{province},
+            city = #{city},
+            district = #{district},
+            detail = #{detail},
+            is_default = #{isDefault},
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = #{id}
+    </update>
+
+    <!-- 删除地址 -->
+    <delete id="deleteById">
+        DELETE FROM address
+        WHERE id = #{id}
+    </delete>
+
+    <!-- 取消默认地址 -->
+    <update id="cancelDefaultAddress">
+        UPDATE address
+        SET is_default = 0,
+            updated_at = CURRENT_TIMESTAMP
+        WHERE user_id = #{userId}
+    </update>
+
+    <!-- 设置默认地址 -->
+    <update id="setDefaultAddress">
+        UPDATE address
+        SET is_default = 1,
+            updated_at = CURRENT_TIMESTAMP
+        WHERE user_id = #{userId} AND id = #{id}
+    </update>
+
+</mapper>

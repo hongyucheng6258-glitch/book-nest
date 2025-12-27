@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.book.mapper.ChatMessageMapper">
+
+    <!-- 结果集映射：数据库列→实体类字段 -->
+    <resultMap id="ChatMessageResultMap" type="com.example.book.entity.ChatMessage">
+        <id column="id" property="id"/>
+        <result column="from_user_id" property="fromUserId"/>
+        <result column="to_user_id" property="toUserId"/>
+        <result column="content" property="content"/>
+        <result column="is_read" property="isRead"/>
+        <result column="created_at" property="createdAt"/>
+        <!-- 关联发送者信息 -->
+        <association property="fromUser" javaType="com.example.book.entity.User">
+            <id column="from_user_id" property="id"/>
+            <result column="from_username" property="username"/>
+        </association>
+        <!-- 关联接收者信息 -->
+        <association property="toUser" javaType="com.example.book.entity.User">
+            <id column="to_user_id" property="id"/>
+            <result column="to_username" property="username"/>
+        </association>
+    </resultMap>
+
+    <!-- 1. 添加聊天消息 -->
+    <insert id="insert">
+        INSERT INTO chat_message (from_user_id, to_user_id, content, is_read, created_at)
+        VALUES (#{fromUserId}, #{toUserId}, #{content}, #{isRead}, #{createdAt})
+    </insert>
+
+    <!-- 2. 根据ID删除聊天消息 -->
+    <delete id="deleteById">
+        DELETE FROM chat_message WHERE id = #{id}
+    </delete>
+
+    <!-- 3. 根据ID查询聊天消息 -->
+    <select id="selectById" resultMap="ChatMessageResultMap">
+        SELECT cm.id, cm.from_user_id, cm.to_user_id, cm.content, cm.is_read, cm.created_at,
+               u1.username as from_username, u2.username as to_username
+        FROM chat_message cm
+        LEFT JOIN user u1 ON cm.from_user_id = u1.id
+        LEFT JOIN user u2 ON cm.to_user_id = u2.id
+        WHERE cm.id = #{id}
+    </select>
+
+    <!-- 4. 查询两个用户之间的聊天消息 -->
+    <select id="selectByUserIds" resultMap="ChatMessageResultMap">
+        SELECT cm.id, cm.from_user_id, cm.to_user_id, cm.content, cm.is_read, cm.created_at,
+               u1.username as from_username, u2.username as to_username
+        FROM chat_message cm
+        LEFT JOIN user u1 ON cm.from_user_id = u1.id
+        LEFT JOIN user u2 ON cm.to_user_id = u2.id
+        WHERE (cm.from_user_id = #{userId1} AND cm.to_user_id = #{userId2})
+        OR (cm.from_user_id = #{userId2} AND cm.to_user_id = #{userId1})
+        ORDER BY cm.created_at DESC
+        LIMIT #{limit}
+    </select>
+
+    <!-- 5. 查询用户的未读消息数量 -->
+    <select id="selectUnreadCount" resultType="java.lang.Integer">
+        SELECT COUNT(*) FROM chat_message WHERE to_user_id = #{toUserId} AND is_read = 0
+    </select>
+
+    <!-- 6. 更新消息为已读 -->
+    <update id="updateReadStatus">
+        UPDATE chat_message SET is_read = 1 WHERE from_user_id = #{fromUserId} AND to_user_id = #{toUserId}
+    </update>
+
+    <!-- 7. 查询用户的最近聊天记录 -->
+    <select id="selectRecentMessages" resultMap="ChatMessageResultMap">
+        SELECT cm.id, cm.from_user_id, cm.to_user_id, cm.content, cm.is_read, cm.created_at,
+               u1.username as from_username, u2.username as to_username
+        FROM chat_message cm
+        LEFT JOIN user u1 ON cm.from_user_id = u1.id
+        LEFT JOIN user u2 ON cm.to_user_id = u2.id
+        WHERE cm.from_user_id = #{userId} OR cm.to_user_id = #{userId}
+        ORDER BY cm.created_at DESC
+        LIMIT #{limit}
+    </select>
+
+    <!-- 8. 获取所有聊天消息 -->
+    <select id="selectAll" resultMap="ChatMessageResultMap">
+        SELECT cm.id, cm.from_user_id, cm.to_user_id, cm.content, cm.is_read, cm.created_at,
+               u1.username as from_username, u2.username as to_username
+        FROM chat_message cm
+        LEFT JOIN user u1 ON cm.from_user_id = u1.id
+        LEFT JOIN user u2 ON cm.to_user_id = u2.id
+        ORDER BY cm.created_at DESC
+    </select>
+    
+    <!-- 9. 删除两个用户之间的所有聊天消息 -->
+    <delete id="deleteByUserIds">
+        DELETE FROM chat_message 
+        WHERE (from_user_id = #{userId1} AND to_user_id = #{userId2})
+        OR (from_user_id = #{userId2} AND to_user_id = #{userId1})
+    </delete>
+
+</mapper>

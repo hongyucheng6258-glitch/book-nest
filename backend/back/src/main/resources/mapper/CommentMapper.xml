@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.book.mapper.CommentMapper">
+
+    <!-- 结果集映射：数据库列→实体类字段 -->
+    <resultMap id="CommentResultMap" type="com.example.book.entity.Comment">
+        <id column="id" property="id"/>
+        <result column="user_id" property="userId"/>
+        <result column="book_id" property="bookId"/>
+        <result column="content" property="content"/>
+        <result column="created_at" property="createdAt"/>
+        <result column="updated_at" property="updatedAt"/>
+        <result column="parent_id" property="parentId"/>
+        <result column="like_count" property="likeCount"/>
+        <result column="username" property="userName"/>
+        <result column="book_name" property="bookName"/>
+        <!-- 关联用户信息 -->
+        <association property="user" javaType="com.example.book.entity.User">
+            <id column="user_id" property="id"/>
+            <result column="username" property="username"/>
+        </association>
+        <!-- 子评论列表 -->
+        <collection property="replies" ofType="com.example.book.entity.Comment" resultMap="CommentResultMap"/>
+    </resultMap>
+    
+    <!-- 评论点赞结果集映射 -->
+    <resultMap id="CommentLikeResultMap" type="com.example.book.entity.CommentLike">
+        <id column="id" property="id"/>
+        <result column="comment_id" property="commentId"/>
+        <result column="user_id" property="userId"/>
+        <result column="created_at" property="createdAt"/>
+    </resultMap>
+
+    <!-- 1. 添加评论 -->
+    <insert id="insert">
+        INSERT INTO comment (user_id, book_id, content, parent_id, like_count, created_at, updated_at)
+        VALUES (#{userId}, #{bookId}, #{content}, #{parentId}, #{likeCount}, #{createdAt}, #{updatedAt})
+    </insert>
+    
+    <!-- 2. 根据书籍ID获取评论列表 -->
+    <select id="selectByBookId" resultMap="CommentResultMap">
+        SELECT c.id, c.user_id, c.book_id, c.content, c.parent_id, c.like_count, c.created_at, c.updated_at, u.username
+        FROM comment c
+        LEFT JOIN user u ON c.user_id = u.id
+        WHERE c.book_id = #{bookId} AND c.parent_id IS NULL
+        ORDER BY c.created_at DESC
+    </select>
+    
+    <!-- 3. 根据书籍ID获取评论列表，支持排序 -->
+    <select id="selectByBookIdWithSort" resultMap="CommentResultMap">
+        SELECT c.id, c.user_id, c.book_id, c.content, c.parent_id, c.like_count, c.created_at, c.updated_at, u.username, u.id as user_id
+        FROM comment c
+        LEFT JOIN user u ON c.user_id = u.id
+        WHERE c.book_id = #{bookId} AND c.parent_id IS NULL
+        ORDER BY c.${sortBy} ${order}
+    </select>
+    
+    <!-- 4. 查询评论的子评论列表 -->
+    <select id="selectRepliesByParentId" resultMap="CommentResultMap">
+        SELECT c.id, c.user_id, c.book_id, c.content, c.parent_id, c.like_count, c.created_at, c.updated_at, u.username, u.id as user_id
+        FROM comment c
+        LEFT JOIN user u ON c.user_id = u.id
+        WHERE c.parent_id = #{parentId}
+        ORDER BY c.created_at ASC
+    </select>
+    
+    <!-- 5. 查询评论的点赞数量 -->
+    <select id="selectLikeCountByCommentId" resultType="java.lang.Integer">
+        SELECT COUNT(*) FROM comment_like WHERE comment_id = #{commentId}
+    </select>
+    
+    <!-- 6. 查询用户是否点赞了某条评论 -->
+    <select id="selectCommentLike" resultMap="CommentLikeResultMap">
+        SELECT id, comment_id, user_id, created_at
+        FROM comment_like
+        WHERE comment_id = #{commentId} AND user_id = #{userId}
+    </select>
+    
+    <!-- 7. 插入评论点赞记录 -->
+    <insert id="insertCommentLike">
+        INSERT INTO comment_like (comment_id, user_id, created_at)
+        VALUES (#{commentId}, #{userId}, #{createdAt})
+    </insert>
+    
+    <!-- 8. 删除评论点赞记录 -->
+    <delete id="deleteCommentLike">
+        DELETE FROM comment_like
+        WHERE comment_id = #{commentId} AND user_id = #{userId}
+    </delete>
+    
+    <!-- 10. 根据评论ID删除评论 -->
+    <delete id="deleteById">
+        DELETE FROM comment
+        WHERE id = #{id}
+    </delete>
+
+    <!-- 11. 根据书籍ID获取评论数量 -->
+    <select id="selectCountByBookId" resultType="java.lang.Integer">
+        SELECT COUNT(*)
+        FROM comment
+        WHERE book_id = #{bookId}
+    </select>
+
+    <!-- 12. 根据评论ID获取评论 -->
+    <select id="selectById" resultMap="CommentResultMap">
+        SELECT c.id, c.user_id, c.book_id, c.content, c.parent_id, c.like_count, c.created_at, c.updated_at, u.username
+        FROM comment c
+        LEFT JOIN user u ON c.user_id = u.id
+        WHERE c.id = #{id}
+    </select>
+
+    <!-- 13. 根据用户ID和书籍ID获取评论 -->
+    <select id="selectByUserIdAndBookId" resultMap="CommentResultMap">
+        SELECT c.id, c.user_id, c.book_id, c.content, c.parent_id, c.like_count, c.created_at, c.updated_at, u.username
+        FROM comment c
+        LEFT JOIN user u ON c.user_id = u.id
+        WHERE c.user_id = #{userId} AND c.book_id = #{bookId}
+    </select>
+    
+    <!-- 14. 获取所有评论 -->
+    <select id="selectAll" resultMap="CommentResultMap">
+        SELECT c.id, c.user_id, c.book_id, c.content, c.parent_id, c.like_count, c.created_at, c.updated_at, u.username, b.name AS book_name
+        FROM comment c
+        LEFT JOIN user u ON c.user_id = u.id
+        LEFT JOIN book b ON c.book_id = b.id
+        ORDER BY c.created_at ASC
+    </select>
+    
+    <!-- 15. 更新评论的点赞数量 -->
+    <update id="updateLikeCount">
+        UPDATE comment SET like_count = #{likeCount} WHERE id = #{commentId}
+    </update>
+
+</mapper>

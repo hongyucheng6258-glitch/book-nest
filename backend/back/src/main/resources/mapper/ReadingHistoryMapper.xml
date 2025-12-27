@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.book.mapper.ReadingHistoryMapper">
+
+    <!-- 结果集映射：数据库列→实体类字段 -->
+    <resultMap id="ReadingHistoryResultMap" type="com.example.book.entity.ReadingHistory">
+        <id column="id" property="id"/>
+        <result column="user_id" property="userId"/>
+        <result column="book_id" property="bookId"/>
+        <result column="read_at" property="readAt"/>
+        <result column="last_page" property="lastPage"/>
+        <result column="reading_progress" property="readingProgress"/>
+        <!-- 关联书籍信息 -->
+        <association property="book" javaType="com.example.book.entity.Book">
+            <id column="book_id" property="id"/>
+            <result column="name" property="name"/>
+            <result column="author" property="author"/>
+            <result column="price" property="price"/>
+            <result column="image_url" property="imageUrl"/>
+        </association>
+    </resultMap>
+
+    <!-- 1. 添加或更新阅读记录 -->
+    <insert id="addOrUpdateHistory" parameterType="com.example.book.entity.ReadingHistory">
+        INSERT OR REPLACE INTO reading_history (id, user_id, book_id, read_at, last_page, reading_progress, created_at, updated_at)
+        VALUES (
+            (SELECT id FROM reading_history WHERE user_id = #{userId} AND book_id = #{bookId}),
+            #{userId}, 
+            #{bookId}, 
+            #{readAt}, 
+            #{lastPage}, 
+            #{readingProgress}, 
+            CURRENT_TIMESTAMP,
+            CURRENT_TIMESTAMP
+        )
+    </insert>
+
+    <!-- 2. 根据用户ID获取阅读历史记录 -->
+    <select id="getReadingHistoryByUserId" resultMap="ReadingHistoryResultMap">
+        SELECT rh.id, rh.user_id, rh.book_id, rh.read_at, rh.last_page, rh.reading_progress,
+               b.name, b.author, b.price, b.image_url
+        FROM reading_history rh
+        LEFT JOIN book b ON rh.book_id = b.id
+        WHERE rh.user_id = #{userId}
+        ORDER BY rh.read_at DESC
+    </select>
+
+    <!-- 3. 根据阅读记录ID删除阅读记录 -->
+    <delete id="deleteHistoryById">
+        DELETE FROM reading_history
+        WHERE id = #{id}
+    </delete>
+
+    <!-- 4. 清空用户阅读历史记录 -->
+    <delete id="deleteAllHistoryByUserId">
+        DELETE FROM reading_history
+        WHERE user_id = #{userId}
+    </delete>
+
+    <!-- 5. 根据用户ID获取阅读历史数量 -->
+    <select id="getHistoryCountByUserId" resultType="java.lang.Integer">
+        SELECT COUNT(*)
+        FROM reading_history
+        WHERE user_id = #{userId}
+    </select>
+
+    <!-- 6. 根据用户ID和书籍ID获取阅读记录 -->
+    <select id="getHistoryByUserIdAndBookId" resultType="com.example.book.entity.ReadingHistory">
+        SELECT id, user_id, book_id, read_at, last_page, reading_progress
+        FROM reading_history
+        WHERE user_id = #{userId} AND book_id = #{bookId}
+    </select>
+</mapper>

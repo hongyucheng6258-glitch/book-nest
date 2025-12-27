@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.book.mapper.NotificationMapper">
+
+    <!-- 结果集映射：数据库列→实体类字段 -->
+    <resultMap id="NotificationResultMap" type="com.example.book.entity.Notification">
+        <id column="id" property="id"/>
+        <result column="user_id" property="userId"/>
+        <result column="order_id" property="orderId"/>
+        <result column="content" property="content"/>
+        <result column="status" property="status"/>
+        <result column="created_at" property="createdAt"/>
+        <result column="type" property="type"/>
+    </resultMap>
+
+    <!-- 1. 添加通知 -->
+    <insert id="addNotification" parameterType="com.example.book.entity.Notification">
+        INSERT INTO notification (user_id, order_id, content, status, created_at, type)
+        VALUES (#{userId}, #{orderId}, #{content}, #{status}, #{createdAt}, #{type})
+    </insert>
+
+    <!-- 2. 根据用户ID获取通知列表 -->
+    <select id="getNotificationsByUserId" resultMap="NotificationResultMap">
+        SELECT id, user_id, order_id, content, status, created_at, type
+        FROM notification
+        WHERE user_id = #{userId}
+        ORDER BY created_at DESC
+    </select>
+
+    <!-- 3. 更新通知状态 -->
+    <update id="updateNotificationStatus">
+        UPDATE notification
+        SET status = #{status}
+        WHERE id = #{id}
+    </update>
+
+    <!-- 4. 根据通知ID删除通知 -->
+    <delete id="deleteNotificationById">
+        DELETE FROM notification
+        WHERE id = #{id}
+    </delete>
+
+    <!-- 5. 获取用户未读通知数量 -->
+    <select id="getUnreadCount" resultType="java.lang.Integer">
+        SELECT COUNT(*)
+        FROM notification
+        WHERE user_id = #{userId} AND status = 0
+    </select>
+
+    <!-- 6. 标记所有通知为已读 -->
+    <update id="markAllAsRead">
+        UPDATE notification
+        SET status = 1
+        WHERE user_id = #{userId}
+    </update>
+</mapper>
